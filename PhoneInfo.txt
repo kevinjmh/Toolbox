@@ -1,0 +1,229 @@
+
+
+public class PhoneInfo {
+
+ 
+// 获取手机ip method-1  
+public String getLocalIpAddress() {  
+    try {  
+        for (Enumeration<NetworkInterface> en = NetworkInterface  
+                .getNetworkInterfaces(); en.hasMoreElements();) {  
+            NetworkInterface intf = en.nextElement();  
+            for (Enumeration<InetAddress> enumIpAddr = intf  
+                    .getInetAddresses(); enumIpAddr.hasMoreElements();) {  
+                InetAddress inetAddress = enumIpAddr.nextElement();  
+                if (!inetAddress.isLoopbackAddress()) {  
+                    Toast.makeText(this,  
+                            inetAddress.getHostAddress().toString(), 3000)  
+                            .show();  
+                    return inetAddress.getHostAddress().toString();  
+                }  
+            }  
+        }  
+    } catch (SocketException ex) {  
+        ex.printStackTrace();  
+        // Log.e("ifo", ex.toString());  
+    }  
+    return "";  
+} 
+
+ 
+// 查看本机外网IP  
+/*  
+ * 该方法需要设备支持上网 查看  
+ * System.out.println((GetNetIp("http://fw.qq.com/ipaddress"))); 加权限  
+ * <uses-permission  
+ * android:name="android.permission.INTERNET"></uses-permission>  
+ * 通过获取http://fw.qq.com/ipaddress网页取得外网IP 这里有几个查看IP的网址然后提取IP试试。  
+ * http://ip168.com/ http://www.cmyip.com/ http://city.ip138.com/ip2city.asp  
+ */ 
+public String GetNetIp(String ipaddr) {  
+    URL infoUrl = null;  
+    InputStream inStream = null;  
+    try {  
+        infoUrl = new URL(ipaddr);  
+        URLConnection connection = infoUrl.openConnection();  
+        HttpURLConnection httpConnection = (HttpURLConnection) connection;  
+        int responseCode = httpConnection.getResponseCode();  
+        if (responseCode == HttpURLConnection.HTTP_OK) {  
+            inStream = httpConnection.getInputStream();  
+            BufferedReader reader = new BufferedReader(  
+                    new InputStreamReader(inStream, "utf-8"));  
+            StringBuilder strber = new StringBuilder();  
+            String line = null;  
+            while ((line = reader.readLine()) != null)  
+                strber.append(line + "\n");  
+            inStream.close();  
+            return strber.toString();  
+        }  
+    } catch (MalformedURLException e) {  
+        // TODO Auto-generated catch block  
+        e.printStackTrace();  
+    } catch (IOException e) {  
+        // TODO Auto-generated catch block  
+        e.printStackTrace();  
+    }  
+    return "";  
+}  
+ 
+
+ 
+ 
+// 获取手机经纬度  
+public void getLocation() {  
+    // 1. 创建一个 LocationManager对象。  
+    LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);  
+    // 2. 创建一个 LocationListener对象。  
+    LocationListener myGPSListener = new LocationListener() {  
+        // 一旦Location发生改变就会调用这个方法  
+        public void onLocationChanged(Location location) {  
+            double latitude = location.getLatitude();  
+            double longitude = location.getLongitude();  
+        }  
+ 
+        public void onStatusChanged(String provider, int status,  
+                Bundle extras) {  
+        }  
+ 
+        public void onProviderEnabled(String provider) {  
+        }  
+ 
+        public void onProviderDisabled(String provider) {  
+        }  
+    };  
+    // 3.向LocationManager 注册一个LocationListener。  
+    Criteria criteria = new Criteria();  
+    criteria.setAccuracy(Criteria.ACCURACY_COARSE);  
+    criteria.setAltitudeRequired(false);  
+    criteria.setCostAllowed(true);  
+    criteria.setPowerRequirement(Criteria.POWER_LOW);  
+    String provider = locationManager.getBestProvider(criteria, true); // 根据Criteria  
+                                                                        // 的设置获取一个最佳的Provider  
+    locationManager  
+            .requestLocationUpdates(provider, 5000, 0, myGPSListener);  
+    // 4.移除LocationManager 注册的 LocationListener。  
+    locationManager.removeUpdates(myGPSListener);  
+ 
+}  
+ 
+private String getTotalMemory() {  
+    String str1 = "/proc/meminfo";// 系统内存信息文件  
+    String str2;  
+    String[] arrayOfString;  
+    long initial_memory = 0;  
+    try {  
+        FileReader localFileReader = new FileReader(str1);  
+        BufferedReader localBufferedReader = new BufferedReader(  
+                localFileReader, 8192);  
+        str2 = localBufferedReader.readLine();// 读取meminfo第一行，系统总内存大小  
+ 
+        arrayOfString = str2.split("\\s+");  
+        for (String num : arrayOfString) {  
+            Log.i(str2, num + "\t");  
+        }  
+ 
+        initial_memory = Integer.valueOf(arrayOfString[1]).intValue() * 1024;// 获得系统总内存，单位是KB，乘以1024转换为Byte  
+        localBufferedReader.close();  
+ 
+    } catch (IOException e) {  
+    }  
+    return Formatter.formatFileSize(getBaseContext(), initial_memory);// Byte转换为KB或者MB，内存大小规格化  
+}  
+ 
+// 获取手机CPU信息  
+private String getCpuInfo() {  
+    String str1 = "/proc/cpuinfo";  
+    String str2 = "";  
+    String[] cpuInfo = { "", "" }; // 1-cpu型号 //2-cpu频率  
+    String[] arrayOfString;  
+    try {  
+        FileReader fr = new FileReader(str1);  
+        BufferedReader localBufferedReader = new BufferedReader(fr, 8192);  
+        str2 = localBufferedReader.readLine();  
+        arrayOfString = str2.split("\\s+");  
+        for (int i = 2; i < arrayOfString.length; i++) {  
+            cpuInfo[0] = cpuInfo[0] + arrayOfString[i] + " ";  
+        }  
+        str2 = localBufferedReader.readLine();  
+        arrayOfString = str2.split("\\s+");  
+        cpuInfo[1] += arrayOfString[2];  
+        localBufferedReader.close();  
+    } catch (IOException e) {  
+    }  
+    // Log.i(TAG, "cpuinfo:" + cpuInfo[0] + " " + cpuInfo[1]);  
+    return "1-cpu型号:" + cpuInfo[0] + "2-cpu频率:" + cpuInfo[1];  
+}// 和内存信息同理，cpu信息可通过读取/proc/cpuinfo文件来得到，其中第一行为cpu型号，第二行为cpu频率。  
+ 
+/*  
+ * 一、Android 获取手机中已安装apk文件信息(PackageInfo、ResolveInfo)(应用图片、应用名、包名等)  
+ * 1、通过PackageManager可获取手机端已安装的apk文件的信息，具体代码如下: PackageManager  
+ * packageManager = this.getPackageManager(); List<PackageInfo>  
+ * packageInfoList = packageManager.getInstalledPackages(0);  
+ * 通过上述方法，可得到手机中安装的所有应用程序，包括手动安装的apk包的信息、、系统预装的应用软件的信息，要区分这两类软件可使用以下方法:  
+ * （a）从packageInfoList获取的packageInfo  
+ * ，再通过packageInfo.applicationInfo获取applicationInfo。  
+ * （b）判断(applicationInfo.flags &  
+ * ApplicationInfo.FLAG_SYSTEM)的值，该值大于0时，表示获取的应用为系统预装的应用，反之则为手动安装的应用。  
+ * (1)获取应用的代码: public static List<PackageInfo> getAllApps(Context context) {  
+ * List<PackageInfo> apps = new ArrayList<PackageInfo>(); PackageManager  
+ * pManager = context.getPackageManager(); //获取手机内所有应用 List<PackageInfo>  
+ * paklist = pManager.getInstalledPackages(0); for (int i = 0; i <  
+ * paklist.size(); i++) { PackageInfo pak = (PackageInfo) paklist.get(i);  
+ * //判断是否为非系统预装的应用程序 if ((pak.applicationInfo.flags &  
+ * pak.applicationInfo.FLAG_SYSTEM) <= 0) { apps.add(pak); } } return apps;  
+ * } (2)、获取图片、应用名、包名: PackageManager pManager =  
+ * MessageSendActivity.this.getPackageManager(); List<PackageInfo> appList =  
+ * Utils.getAllApps(MessageSendActivity.this); for(int  
+ * i=0;i<appList.size();i++) { PackageInfo pinfo = appList.get(i); shareItem  
+ * = new ShareItemInfo();  
+ * shareItem.setIcon(pManager.getApplicationIcon(pinfo.applicationInfo));  
+ * shareItem  
+ * .setLabel(pManager.getApplicationLabel(pinfo.applicationInfo).toString  
+ * ()); shareItem.setPackageName(pinfo.applicationInfo.packageName); }  
+ * 其中ShareItemInfo 类自己写的，各位可以忽略 (3)获取支持分享的应用的代码： public static  
+ * List<ResolveInfo> getShareApps(Context context){ List<ResolveInfo> mApps  
+ * = new ArrayList<ResolveInfo>(); Intent intent=new  
+ * Intent(Intent.ACTION_SEND,null);  
+ * intent.addCategory(Intent.CATEGORY_DEFAULT);  
+ * intent.setType("text/plain"); PackageManager pManager =  
+ * context.getPackageManager(); mApps =  
+ * pManager.queryIntentActivities(intent  
+ * ,PackageManager.COMPONENT_ENABLED_STATE_DEFAULT); return mApps; }  
+ * 由于该方法，返回的并不是PackageInfo 对象。而是ResolveInfo。因此获取图片、应用名、包名的方法不一样，如下：  
+ * PackageManager pManager = MessageSendActivity.this.getPackageManager();  
+ * List<ResolveInfo> resolveList =  
+ * Utils.getShareApps(MessageSendActivity.this); for(int  
+ * i=0;i<resolveList.size();i++) { ResolveInfo resolve = resolveList.get(i);  
+ * ShareItemInfo shareItem = new ShareItemInfo(); //set Icon  
+ * shareItem.setIcon(resolve.loadIcon(pManager)); //set Application Name  
+ * shareItem.setLabel(resolve.loadLabel(pManager).toString()); //set Package  
+ * Name shareItem.setPackageName(resolve.activityInfo.packageName); } 总结： 通过  
+ * PackageInfo 获取具体信息方法： 包名获取方法：packageInfo.packageName  
+ * icon获取获取方法：packageManager.getApplicationIcon(applicationInfo)  
+ * 应用名称获取方法：packageManager.getApplicationLabel(applicationInfo)  
+ * 使用权限获取方法：packageManager  
+ * .getPackageInfo(packageName,PackageManager.GET_PERMISSIONS)  
+ * .requestedPermissions 通过 ResolveInfo 获取具体信息方法：  
+ * 包名获取方法：resolve.activityInfo.packageName  
+ * icon获取获取方法：resolve.loadIcon(packageManager)  
+ * 应用名称获取方法：resolve.loadLabel(packageManager).toString()  
+ */ 
+
+ 
+// 显示信息对话框  
+public void showDialog(String title, String info) {  
+    AlertDialog dialog = new AlertDialog.Builder(this)  
+            .setTitle(title)  
+            .setMessage(info)  
+            .setPositiveButton("close",  
+                    new DialogInterface.OnClickListener() {  
+                        @Override 
+                        public void onClick(DialogInterface dialog,  
+                                int which) {  
+                            dialog.cancel();  
+                            dialog = null;  
+                        }  
+                    }).create();  
+    dialog.show();  
+} 
+}
